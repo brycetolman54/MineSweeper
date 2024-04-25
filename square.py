@@ -2,8 +2,8 @@
 
 class Square():
     
-    def __init__(self, val):
-        self.val = val
+    def __init__(self):
+        self.val = 0
         self.revealed = False
         self.bomb = False
         self.flagged = False
