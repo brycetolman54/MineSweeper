@@ -23,18 +23,33 @@ class Board():
             self.board[i] = list(range(cols))
 
         # set all the places in the board to be empty boxes
-       
-       # set the mines
-       for i in range(mines):
+        for i in range(rows):
+            for j in range(cols):
+                self.board[i][j] = Square(0)
+                self.board[i][j].revealed = True
+      
+        # set the mines
+        for i in range(mines):
 
-           # choose a random row and col
-           
-           # make sure that isn't already a bomb
+            while True:
 
-           # set it to be a bomb
+                # choose a random row and col
+                theRow = random.randint(0, rows - 1)
+                theCol = random.randint(0, cols - 1)
+                theSquare = self.board[theRow][theCol]
 
-           # add a count to all surrounding squares (i-1 to i+1, etc)
+                # make sure that isn't already a bomb
+                if not theSquare.bomb:
+                    break
 
+            # set it to be a bomb
+            theSquare.bomb = True
+
+            # add a count to all surrounding squares (i-1 to i+1, etc)
+            for j in range(theRow - 1, theRow + 2):
+                for k in range(theCol - 1, theCol + 2):
+                    if k < cols and j < rows and k >= 0 and j >= 0:
+                        self.board[j][k].val += 1
 
     # to start the time
     def Start(self):
