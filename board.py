@@ -73,12 +73,16 @@ class Board():
     # to flag a square as a mine
     def Flag(self, row, col):
         if not self.board[row][col].revealed:
-            self.board[row][col].flagged = True
-            self.mines -= 1
+            if self.board[row][col].flagged:
+                self.board[row][col].flagged = False
+                self.mines += 1
+            else:
+                self.board[row][col].flagged = True
+                self.mines -= 1
 
     # to uncover a square
     def Reveal(self, row, col, ML=True):
-        if not self.board[row][col].revealed:
+        if not (self.board[row][col].revealed or self.board[row][col].flagged):
             self.left -= 1
             self.board[row][col].revealed = True
         if not ML and self.board[row][col].val == 0:

@@ -42,9 +42,9 @@ from board import Board
 class Square(QLabel):
 
     # set the signals
-    reveal = pyqtSignal(int, int) # if we left click
-    flag = pyqtSignal(int, int) # if we right click
-    # if we hover and press the space bar, I want to be able to handle that too
+    reveal = pyqtSignal(int, int)
+    flag = pyqtSignal(int, int)
+    expand = pyqtSignal(int, int)
 
     # set up the widget
     def __init__(self, row, col, val):
@@ -54,12 +54,17 @@ class Square(QLabel):
         self.row = row
         self.col = col
         self.val = val
+        self.text = ""
 
         self.initUI()
 
     # set up the widget de verdad
     def initUI(self):
 
+        # set flags
+        self.revealed = False
+        self.flagged = False
+        
         # set the size
         self.setFixedHeight(25)
         self.setFixedWidth(25)
@@ -67,20 +72,62 @@ class Square(QLabel):
         # set the style
         self.hidden = "background-color: gray; border: 3px solid; border-color: white black black white"
         self.setStyleSheet(self.hidden)
+
+    # to flag the square
+    def Flag(self):
+        if not self.revealed:
+            if not self.flagged:
+                self.flagged = True
+                self.setStyleSheet(f"{self.hidden}; color: red; font-weight: bold; font-size: 20px")
+                self.setText("F")
+            else: 
+                self.flagged = False
+                self.setStyleSheet(self.hidden)
+                self.setText("")
+            self.flag.emit(self.row, self.col)
+
+# to reveal the square
+    def Reveal(self, color):
+        if not self.revealed:
+            self.revealed = True
+            self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.setText(str(self.val) if not self.val == 0 else "")
+            self.setStyleSheet(f"font-size: 20px; font-weight: bold; background-color: {'rgb(204, 204, 204)' if not self.val == 'B' else 'red'}; color: {color}; border: 1px solid black")
+
+    # check when we are hovering over the square
+    def enterEvent(self, event):
+        if event.key() == Qt.Key.Key_Space:
+            self.Flag() if not self.revealed else self.expand.emit(self.row, self.col)
+    # check if we hit space
+    #def keyPressEvent(self, event):
+    #    if event.key() == Qt.Key.Key_Space:
+    #        self.Flag() if not self.revealed else self.expand.emit(self.row, self.col)
+
+    # check if we used the mouse
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and not self.flagged:
+            self.reveal.emit(self.row, self.col) if not self.revealed else self.expand.emit(self.row, self.col)
+        elif event.button() == Qt.MouseButton.RightButton:
+            self.Flag()
+
 # }-
 
 # the board to hold all of the squares and update them as needed -{
 class Squares(QWidget):
 
+    # set up signals
+    won = pyqtSignal()
+    lost = pyqtSignal()
+
     # start the sweeper
     def __init__(self, rows, cols, mines):
         super().__init__()
-        
+
         # set the vars
         self.rows = rows
         self.cols = cols
         self.mines = mines
-        self.colors = ["blue", "green", "red", "purple", "orange", "teal", "yellow", "black"]
+        self.colors = ["rgb(204, 204, 204)", "blue", "green", "red", "purple", "orange", "teal", "yellow", "black"]
         self.squares = list(range(rows))
         for i in range(rows):
             self.squares[i] = list(range(cols))
@@ -96,14 +143,71 @@ class Squares(QWidget):
         layout = QGridLayout()
         layout.setSpacing(0)
 
-        # add the squares
+        # add the squares and connect their signals
         for row in range(self.rows):
             for col in range(self.cols):
+                
+                # get the square
                 square = Square(row, col, "B" if self.board.board[row][col].bomb else self.board.board[row][col].val)
+                
+                # connect the signals
+                square.reveal.connect(self.Reveal)
+                square.flag.connect(self.Flag)
+                square.expand.connect(self.Expand)
+                
+                # add the square to the layout and the array
                 layout.addWidget(square, row, col)
                 self.squares[row][col] = square
+
         self.setLayout(layout)
 
+    # to flag a square
+    def Flag(self, row, col):
+
+        # update the board
+        self.board.Flag(row, col)
+
+        # see if we have won
+        if self.board.Won():
+            self.won.emit()
+
+    # to reveal a square
+    def Reveal(self, row, col):
+
+        # update the board
+        if self.board.Reveal(row, col, False):
+            self.lost.emit()
+
+        # update the squares
+        self.updateSquares()
+
+        # see if we have won
+        if self.board.Won():
+            self.won.emit()
+
+    # to expand a square
+    def Expand(self, row, col):
+
+        # update the board
+        if self.board.Expand(row, col, False):
+            self.lost.emit()
+
+        # update the squars
+        self.updateSquares()
+
+        # see if we have won
+        if self.board.Won():
+            self.won.emit()
+
+
+    # helper function to update the board after an expand or reveal
+    def updateSquares(self):
+
+        # loop the array and update all boxes that are no longer revealed
+        for row in range(self.rows):
+            for col in range(self.cols):
+                if self.board.board[row][col].revealed:
+                    self.squares[row][col].Reveal(self.colors[int(self.squares[row][col].val)] if not self.squares[row][col].val == 'B' else "black")
 
 # }-
         
