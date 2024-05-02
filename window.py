@@ -78,7 +78,8 @@ class Square(QLabel):
         if not self.revealed:
             if not self.flagged:
                 self.flagged = True
-                self.setStyleSheet(f"{self.hidden}; color: red; font-weight: bold; font-size: 20px")
+                self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.setStyleSheet(f"{self.hidden}; background-color: rgb(204, 68, 153); color: black; font-weight: bold; font-size: 14px")
                 self.setText("F")
             else: 
                 self.flagged = False
@@ -92,16 +93,16 @@ class Square(QLabel):
             self.revealed = True
             self.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.setText(str(self.val) if not self.val == 0 else "")
-            self.setStyleSheet(f"font-size: 20px; font-weight: bold; background-color: {'rgb(204, 204, 204)' if not self.val == 'B' else 'red'}; color: {color}; border: 1px solid black")
+            self.setStyleSheet(f"font-size: 17px; font-weight: bold; background-color: {'rgb(204, 204, 204)' if not self.val == 'B' else 'red'}; color: {color}; border: 1px solid black")
 
     # check when we are hovering over the square
     def enterEvent(self, event):
+        self.setFocus()
+
+    # check if we hit space
+    def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Space:
             self.Flag() if not self.revealed else self.expand.emit(self.row, self.col)
-    # check if we hit space
-    #def keyPressEvent(self, event):
-    #    if event.key() == Qt.Key.Key_Space:
-    #        self.Flag() if not self.revealed else self.expand.emit(self.row, self.col)
 
     # check if we used the mouse
     def mousePressEvent(self, event):
@@ -160,7 +161,6 @@ class Squares(QWidget):
                 self.squares[row][col] = square
 
         self.setLayout(layout)
-
     # to flag a square
     def Flag(self, row, col):
 
@@ -191,6 +191,7 @@ class Squares(QWidget):
         # update the board
         if self.board.Expand(row, col, False):
             self.lost.emit()
+            return
 
         # update the squars
         self.updateSquares()
@@ -213,6 +214,9 @@ class Squares(QWidget):
         
 # the header to hold all of the info that isn't in the board -{
 class Header(QWidget):
+
+    # set the signals
+    reset = pyqtSignal()
 
     def __init__(self, mines):
         super().__init__()
@@ -237,8 +241,8 @@ class Header(QWidget):
         # start the timer
         self.timer = Timer()
 
-        # set the style
-        self.setStyleSheet("font-family: Impact")
+        # set the connections
+        self.reset.clicked.connect(self.Reset)
 
         # set the layout
         layout = QHBoxLayout()
@@ -251,6 +255,11 @@ class Header(QWidget):
         layout.addWidget(self.timer)
         layout.setAlignment(self.timer, Qt.AlignmentFlag.AlignHCenter)
         self.setLayout(layout)
+
+    # send the reset signal up
+    def Reset(self):
+        self.reset.emit()
+
 # }-
 
 # the timer to keep track of time since the game started -{
@@ -401,8 +410,9 @@ class Reset(QPushButton):
         self.setText("Restart")
 
         # set the color
-        self.setStyleSheet("border-radius: 10px; background-color: blue; font-weight: bold; color: white; border: 2px solid; border-color: grey black black grey")
-        # change this to New Game if we have chosen a new difficulty, and change th ebutton to blue
+        self.active = "font-size: 18px; border-radius: 10px; background-color: blue; font-weight: bold; color: white; border: 2px solid; border-color: grey black black grey"
+        self.setStyleSheet(self.active)
+
 # }-
 
 # the item to hold the count of how many mines you have left to place -{
@@ -427,6 +437,19 @@ class MineCount(QLabel):
         self.setText(str(self.mines))
 # }-
 
+# the class to hold your score report -{
+class Score(QLabel):
+
+    def __init__(self, text, color):
+        super().__init__()
+        self.initUI(text, color)
+
+    def initUI(self, text, color):
+        self.setText(text)
+        self.setFixedHeight(40)
+        self.setStyleSheet(f"font-size: 16px; color: {color}")
+# }-
+
 # the widget to hold all other widgets -{
 class Window(QWidget):
 
@@ -438,24 +461,60 @@ class Window(QWidget):
         self.cols = cols
         self.mines = mines
 
-        # set everything else up
-        self.initUI()
+        # set the style
+        self.setStyleSheet("font-family: Impact")
 
-    def initUI(self):
+        # set everything else up
+        self.Set()
+
+    # to initially set up and later reset the game
+    def Set(self):
 
         # start the header
         self.Header = Header(self.mines)
 
         # start the board
         self.Squares = Squares(self.rows, self.cols, self.mines)
-        
+
+        # get a spot for the score
+        self.Score = None
+
+        # connect the signals
+        self.Squares.won.connect(self.Won)
+        self.Squares.lost.connect(self.Lost)
+        self.Header.reset.connect(self.Reset)
+
         # set the layout
-        layout = QVBoxLayout()
-        layout.addWidget(self.Header, 0)
-        layout.setAlignment(self.Header, Qt.AlignmentFlag.AlignHCenter)
-        layout.addWidget(self.Squares, 1)
-        layout.setAlignment(self.Squares, Qt.AlignmentFlag.AlignCenter)
-        self.setLayout(layout)
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(self.Header)
+        self.layout.setAlignment(self.Header, Qt.AlignmentFlag.AlignHCenter)
+        self.layout.addWidget(self.Squares)
+        self.layout.setAlignment(self.Squares, Qt.AlignmentFlag.AlignCenter)
+        self.setLayout(self.layout)
+       
+
+    # to handle the squares emissions
+    def Won(self):
+        self.Score = Score("You Won! It took you {} seconds. Congratulations! Feel free to play again!", "green")
+        self.layout.insertWidget(1, self.Score)
+        self.layout.setAlignment(self.Score, Qt.AlignmentFlag.AlignCenter)
+    def Lost(self):
+        self.Score = Score("You Lost! That's too bad! Feel free to play again!", "red")
+        self.layout.insertWidget(1, self.Score)
+        self.layout.setAlignment(self.Score, Qt.AlignmentFlag.AlignCenter)
+
+    # to handle the header emissions
+    def Reset(self):
+
+        # delete the old widgets
+        self.Score.deleteLater()
+        self.Squares.deleteLater()
+        self.Header.deleteLater()
+
+        # start anew
+        self.Set()
+        
+    
 # }-
 
 # run the program -{
