@@ -68,6 +68,9 @@ class Board():
 
         blownUp = False
 
+        if not ML and not self.board[row][col].val == self.board[row][col].near:
+            return blownUp
+
         for i in range(row - 1, row + 2):
             for j in range(col - 1, col + 2):
                 if i < self.rows and i >= 0 and j < self.cols and j >= 0 and not self.board[i][j].revealed and not self.board[i][j].flagged:
@@ -81,9 +84,17 @@ class Board():
         if not self.board[row][col].revealed:
             if self.board[row][col].flagged:
                 self.board[row][col].flagged = False
+                for i in range(row - 1, row + 2):
+                    for j in range(col - 1, col + 2):
+                        if i < self.rows and i >= 0 and j < self.cols and j >= 0:
+                            self.board[i][j].near -= 1
                 self.mines += 1
             else:
                 self.board[row][col].flagged = True
+                for i in range(row - 1, row + 2):
+                    for j in range(col - 1, col + 2):
+                        if i < self.rows and i >= 0 and j < self.cols and j >= 0:
+                            self.board[i][j].near += 1
                 self.mines -= 1
 
     # to uncover a square

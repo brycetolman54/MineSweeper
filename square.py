@@ -4,6 +4,7 @@ class Square():
     
     def __init__(self):
         self.val = 0
+        self.near = 0
         self.revealed = False
         self.bomb = False
         self.flagged = False
