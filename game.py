@@ -128,7 +128,7 @@ if __name__ == '__main__':
                 print("\t{}that is not a valid column index{}".format(red, white))
 
             if resp[0] == "e" or resp[0] == "expand":
-                if b.Expand(squareRow - 1, squareCol - 1):
+                if b.Expand(squareRow - 1, squareCol - 1, False):
                     break
                 print("\n{}".format(b.Print()))
             elif resp[0] == "f" or resp[0] == "flag":
@@ -136,7 +136,7 @@ if __name__ == '__main__':
                     break
                 print("\n{}".format(b.Print()))
             elif resp[0] == "r" or resp[0] == "reveal":
-                if b.Reveal(squareRow - 1, squareCol - 1):
+                if b.Reveal(squareRow - 1, squareCol - 1, False):
                     break
                 print("\n{}".format(b.Print()))
         else:

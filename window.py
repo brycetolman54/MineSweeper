@@ -1,10 +1,12 @@
-# get the imports
+# get the imports -{
 import sys
 import signal
 from PyQt6.QtCore import (
     Qt, 
     QEvent,
-    pyqtSignal
+    pyqtSignal,
+    QTime,
+    QTimer
 )
 from PyQt6.QtWidgets import (
     QApplication,
@@ -18,8 +20,9 @@ from PyQt6.QtWidgets import (
     QLabel
 )
 from board import Board
+# }-
 
-# The Vision:
+# The Vision: -{
 #   _____________________________________
 #   |  _______    _____   ___   ______  |
 #   | |_Mines_|  |_Lvl_| |_R_| |_Time_| |
@@ -33,6 +36,7 @@ from board import Board
 #   | |_|_|_|_|_|_|_|_|_|_|_|_|_|_|_|_| |
 #   | |_|_|_|_|_|_|_|_|_|_|_|_|_|_|_|_| |
 #   |___________________________________|
+# }-
 
 # the square to hold the info about each box in the board -{
 class Square(QLabel):
@@ -61,8 +65,8 @@ class Square(QLabel):
         self.setFixedWidth(25)
 
         # set the style
-        self.setStyleSheet("background-color: gray; border: 3px solid; border-color: white black black white")
-
+        self.hidden = "background-color: gray; border: 3px solid; border-color: white black black white"
+        self.setStyleSheet(self.hidden)
 # }-
 
 # the board to hold all of the squares and update them as needed -{
@@ -85,10 +89,6 @@ class Squares(QWidget):
 
     def initUI(self):
 
-        # set the size
-        self.setFixedHeight(self.rows * 31)
-        self.setFixedWidth(self.cols * 31)
-
         # get the board
         self.board = Board(self.rows, self.cols, self.mines)
         
@@ -99,7 +99,7 @@ class Squares(QWidget):
         # add the squares
         for row in range(self.rows):
             for col in range(self.cols):
-                square = Square(row, col, self.board.board[row][col].val)
+                square = Square(row, col, "B" if self.board.board[row][col].bomb else self.board.board[row][col].val)
                 layout.addWidget(square, row, col)
                 self.squares[row][col] = square
         self.setLayout(layout)
@@ -176,7 +176,7 @@ class Timer(QLabel):
         self.setText("000")
 # }-
 
-# the item to hold the infro about the difficulty (the list and the options for cutsom boards) -{
+# the item to hold the info about the difficulty (the list and the options for cutsom boards) -{
 class Difficulty(QWidget):
 
     def __init__(self):
@@ -192,7 +192,7 @@ class Difficulty(QWidget):
         self.list = DifficultyList()
         
         # set the style
-        self.setStyleSheet("border-radius: 5px")
+        self.setStyleSheet("border-radius: 5px; border: 1px solid black")
 
         # set the holder in place
         self.holder = DifficultyHolder()
@@ -215,11 +215,11 @@ class DifficultyList(QComboBox):
         self.initUI()
 
     def initUI(self):
+        self.addItem("--Select Level--")
         self.addItem("Beginner (9, 9, 10)")
         self.addItem("Intermediate (16, 16, 40)")
         self.addItem("Expert (16, 30, 99)")
-        self.addItem("Custom Board")
-        self.setCurrentText("--Level-- (rows, cols, mines)")
+        self.addItem("Custom (rows, cols, mines)")
 # }-
 
 # the holder of the options for custom difficulty -{
@@ -297,7 +297,7 @@ class Reset(QPushButton):
         self.setText("Restart")
 
         # set the color
-        self.setStyleSheet("border-radius: 10px; background-color: blue; font-weight: bold; color: white")
+        self.setStyleSheet("border-radius: 10px; background-color: blue; font-weight: bold; color: white; border: 2px solid; border-color: grey black black grey")
         # change this to New Game if we have chosen a new difficulty, and change th ebutton to blue
 # }-
 
