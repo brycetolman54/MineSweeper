@@ -10,7 +10,7 @@ from square import Square
 
 class Board():
     
-    def __init__(self, rows, cols, mines):
+    def __init__(self, rows, cols, mines, safe = False, safeRow = 0, safeCol = 0):
         
         # make the variables accesible
         self.rows = rows
@@ -19,6 +19,8 @@ class Board():
         self.left = rows * cols - mines
         self.start = None
         self.end = None
+        self.safeRows = list(range(safeRow - 1, safeRow + 2))
+        self.safeCols = list(range(safeCol - 1, safeCol + 2))
 
         # set the board
         self.board = list(range(rows))
@@ -39,6 +41,10 @@ class Board():
                 theRow = random.randint(0, rows - 1)
                 theCol = random.randint(0, cols - 1)
                 theSquare = self.board[theRow][theCol]
+
+                # make sure it isn't the safe one
+                if safe and theRow in self.safeRows and theCol in self.safeCols:
+                    continue
 
                 # make sure that isn't already a bomb
                 if not theSquare.bomb:

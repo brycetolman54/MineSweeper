@@ -47,14 +47,14 @@ class Square(QLabel):
     expand = pyqtSignal(int, int)
 
     # set up the widget
-    def __init__(self, row, col, val):
+    def __init__(self, row, col):
         super().__init__()
 
         # set the vars
         self.row = row
         self.col = col
-        self.val = val
-        self.text = ""
+        self.val = ""
+        self.start = False
         self.done = False
 
         self.initUI()
@@ -76,7 +76,7 @@ class Square(QLabel):
 
     # to flag the square
     def Flag(self):
-        if not self.revealed:
+        if not self.revealed and self.start:
             if not self.flagged:
                 self.flagged = True
                 self.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -90,12 +90,12 @@ class Square(QLabel):
                 self.flag.emit(self.row, self.col, False)
 
 # to reveal the square
-    def Reveal(self, color):
+    def Reveal(self, val, color):
         if not self.revealed:
             self.revealed = True
             self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.setText(str(self.val) if not self.val == 0 else "")
-            self.setStyleSheet(f"font-size: 17px; font-weight: bold; background-color: {'rgb(204, 204, 204)' if not self.val == 'B' else 'red'}; color: {color}; border: 1px solid black")
+            self.setText(str(val))
+            self.setStyleSheet(f"font-size: 17px; font-weight: bold; background-color: {'rgb(204, 204, 204)' if not val == 'B' else 'red'}; color: {color}; border: 1px solid black")
 
     # check when we are hovering over the square
     def enterEvent(self, event):
@@ -149,9 +149,8 @@ class Squares(QWidget):
 
     def initUI(self):
 
-        # get the board
-        self.board = Board(self.rows, self.cols, self.mines)
-        self.board.Start()
+        # start the board
+        self.board = None
         
         # set up the layout
         layout = QGridLayout()
@@ -162,7 +161,7 @@ class Squares(QWidget):
             for col in range(self.cols):
                 
                 # get the square
-                square = Square(row, col, "B" if self.board.board[row][col].bomb else self.board.board[row][col].val)
+                square = Square(row, col)
                 
                 # connect the signals
                 square.reveal.connect(self.Reveal)
@@ -176,10 +175,6 @@ class Squares(QWidget):
         self.setLayout(layout)
     # to flag a square
     def Flag(self, row, col, down):
-
-        if not self.started:
-            self.started = True
-            self.start.emit()
 
         # send the signal
         self.flagSet.emit(down)
@@ -196,7 +191,12 @@ class Squares(QWidget):
     def Reveal(self, row, col):
 
         if not self.started:
+            self.board = Board(self.rows, self.cols, self.mines, True, row, col)
+            self.board.Start()
             self.started = True
+            for rowA in range(self.rows):
+                for colA in range(self.cols):
+                    self.squares[rowA][colA].start = True
             self.start.emit()
 
         # update the board
@@ -241,7 +241,8 @@ class Squares(QWidget):
                 if self.done:
                     self.squares[row][col].done = True
                 if self.board.board[row][col].revealed:
-                    self.squares[row][col].Reveal(self.colors[int(self.squares[row][col].val)] if not self.squares[row][col].val == 'B' else "black")
+                    val = self.board.board[row][col].val if not self.board.board[row][col].bomb else 'B'
+                    self.squares[row][col].Reveal(val, self.colors[int(val)] if not val == 'B' else "black")
 
 # }-
         
